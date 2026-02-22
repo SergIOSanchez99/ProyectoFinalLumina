@@ -305,7 +305,7 @@ async function main() {
 
       if (tablasFaltantes.length > 0) {
         sql += `-- TABLAS FALTANTES: ${tablasFaltantes.join(", ")}\n`;
-        sql += `-- Ejecuta el esquema completo: mysql -u root -p < database/schemas/redsocial_schema.sql\n\n`;
+        sql += `-- Ejecuta el esquema completo: mysql -u root -p < database/schemas/redsocial_FINAL.sql\n\n`;
       }
 
       if (alterStatements.length > 0) {
@@ -315,7 +315,7 @@ async function main() {
 
       if (vistasFaltantes.length > 0) {
         sql += `-- VISTAS FALTANTES: ${vistasFaltantes.join(", ")}\n`;
-        sql += `-- Recrear vistas ejecutando la sección de VISTAS en redsocial_schema.sql\n\n`;
+        sql += `-- Recrear vistas ejecutando la sección de VISTAS en redsocial_FINAL.sql\n\n`;
       }
 
       fs.writeFileSync(migrationPath, sql, "utf8");
