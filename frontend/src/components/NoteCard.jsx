@@ -15,7 +15,7 @@ function NoteCard({ note }) {
         </div>
 
         <div className="note-preview">
-          {note.preview || 'Sin contenido previo...'}
+          {note.preview || (note.content ? `${note.content.slice(0, 150)}${note.content.length > 150 ? '...' : ''}` : 'Sin contenido previo...')}
         </div>
 
         <div className="note-footer">
