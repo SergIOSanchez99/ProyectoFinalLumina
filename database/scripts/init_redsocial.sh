@@ -15,7 +15,7 @@ echo
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DB_DIR="$(dirname "$SCRIPT_DIR")"
 
-mysql -u "$MYSQL_USER" -h "$MYSQL_HOST" -p < "$DB_DIR/schemas/redsocial_schema.sql" || exit 1
+mysql -u "$MYSQL_USER" -h "$MYSQL_HOST" -p < "$DB_DIR/schemas/redsocial_FINAL.sql" || exit 1
 mysql -u "$MYSQL_USER" -h "$MYSQL_HOST" -p < "$DB_DIR/seeds/redsocial_seed.sql" || exit 1
 
 echo

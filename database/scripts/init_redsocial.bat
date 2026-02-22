@@ -16,7 +16,7 @@ echo Host: %MYSQL_HOST%
 echo.
 
 cd /d "%~dp0.."
-mysql -u %MYSQL_USER% -h %MYSQL_HOST% -p < schemas\redsocial_schema.sql
+mysql -u %MYSQL_USER% -h %MYSQL_HOST% -p < schemas\redsocial_FINAL.sql
 if %ERRORLEVEL% neq 0 (
   echo Error al ejecutar el esquema.
   exit /b 1
