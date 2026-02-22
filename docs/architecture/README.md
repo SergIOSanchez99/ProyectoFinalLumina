@@ -8,42 +8,25 @@ La Red Social de Aprendizaje Colaborativo Inteligente utiliza una arquitectura d
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                     FRONTEND (React)                     │
-│  - Componentes UI                                        │
-│  - Gestión de Estado                                     │
-│  - Comunicación HTTP/WebSocket                          │
+│                  FRONTEND (React + Vite)                  │
+│  Puerto 3000 - Componentes, páginas, servicios API       │
 └──────────────────┬──────────────────────────────────────┘
                    │
-                   ↓ HTTP/WS
+                   ↓ HTTP
 ┌─────────────────────────────────────────────────────────┐
-│                    API GATEWAY (4000)                    │
-│  - Enrutamiento                                          │
-│  - Rate Limiting                                         │
-│  - Proxy a Microservicios                               │
+│              FORO-ESTUDIANTES (4300)                     │
+│  Auth, Content, Users, Chatbot, Messaging                │
+│  Conexión directa a MySQL (redsocial)                    │
 └──────────────────┬──────────────────────────────────────┘
                    │
-    ┌──────────────┼──────────────┬───────────────┐
-    │              │              │               │
-    ↓              ↓              ↓               ↓
-┌────────┐   ┌────────┐   ┌────────┐   ┌────────┐
-│  Auth  │   │ Users  │   │Content │   │Collab  │
-│ (4001) │   │ (4002) │   │ (4003) │   │ (4004) │
-└────────┘   └────────┘   └────────┘   └────────┘
-
-    ↓              ↓              ↓               ↓
-┌────────┐   ┌────────┐   ┌────────┐   ┌────────┐
-│  Repu  │   │  Reco  │   │Chatbot │   │        │
-│ (4005) │   │ (4006) │   │ (4007) │   │        │
-└────────┘   └────────┘   └────────┘   └────────┘
-
-    │              │              │               │
-    └──────────────┴──────────────┴───────────────┘
-                   │
-                   ↓
-         ┌─────────────────┐
-         │   MySQL (3306)  │
-         │  Base de Datos  │
-         └─────────────────┘
+                   ├─────────────────────────────┐
+                   ↓                             ↓
+         ┌─────────────────┐          ┌─────────────────────┐
+         │   MySQL (3306)   │          │ MICROSERVICIOS (4200)│
+         │  Base de Datos   │          │ Gateway → usuarios,  │
+         │  redsocial       │          │ cursos, temas,       │
+         └─────────────────┘          │ comentarios, chatbot │
+                                      └─────────────────────┘
 ```
 
 ## Capas de la Arquitectura

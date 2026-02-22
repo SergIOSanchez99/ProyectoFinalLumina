@@ -3,7 +3,8 @@
 ## Base URL
 
 ```
-http://localhost:4000/api
+http://localhost:4300/api   (foro-estudiantes - auth, content, users)
+http://localhost:4200/api   (gateway - proxy a microservicios)
 ```
 
 ## Autenticación
