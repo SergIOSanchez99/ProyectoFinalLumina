@@ -12,6 +12,7 @@
     "db:seed": "mysql -u root -p < database/seeds/sample_data.sql",
     "db:init:redsocial": "mysql -u root -p < database/schemas/redsocial_schema.sql",
     "db:seed:redsocial": "mysql -u root -p < database/seeds/redsocial_seed.sql",
+    "db:check": "npm run db:check --prefix backend/foro-estudiantes",
     "install:backend:from-zero": "npm run install:all --prefix backend",
     "dev:backend:from-zero": "npm run dev --prefix backend"
   },
