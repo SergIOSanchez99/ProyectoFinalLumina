@@ -3,7 +3,7 @@ import { contentService } from '../services/contentService'
 import { useAuth } from '../hooks/useAuth'
 import './CreatePublication.css'
 
-function CreatePublication({ onPublicationCreated }) {
+function CreatePublication({ onPublicationCreated, courseId }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -23,7 +23,8 @@ function CreatePublication({ onPublicationCreated }) {
 
       const publication = await contentService.createPublication({
         ...formData,
-        tags: tagsArray
+        tags: tagsArray,
+        ...(courseId && { courseId })
       })
 
       onPublicationCreated(publication)
