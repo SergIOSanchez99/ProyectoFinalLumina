@@ -68,6 +68,16 @@ DB_PASSWORD=tu_password
 DB_NAME=redsocial
 ```
 
+## Verificar esquema
+
+Para comparar tu base de datos actual con el esquema esperado y detectar tablas/columnas faltantes:
+
+```bash
+npm run db:check
+```
+
+Genera un reporte y, si hay diferencias, un archivo `migration_YYYY-MM-DD.sql` en `backend/foro-estudiantes/scripts/` con los `ALTER TABLE` necesarios.
+
 ## Vistas
 
 - **v_publicaciones_stats**: Publicaciones con conteo de comentarios y reacciones
