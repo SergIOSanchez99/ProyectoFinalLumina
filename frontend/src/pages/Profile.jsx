@@ -209,7 +209,7 @@ function Profile() {
           <h3>{reputation?.level || 1}</h3>
           <p>Nivel</p>
         </div>
-        <div className="stat-card">
+        <div className="stat-card stat-card--ranking">
           <h3>{reputation?.rank || 'N/A'}</h3>
           <p>Ranking</p>
         </div>
