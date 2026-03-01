@@ -1,14 +1,38 @@
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 4203;
+
+let db = null;
+if (process.env.DB_NAME) {
+  try {
+    db = require("./config/db");
+  } catch (e) {
+    console.warn("[temas] DB no configurada, usando store en memoria");
+  }
+}
 
 app.use(cors());
 app.use(express.json());
 
 const temas = [];
 let nextId = 1;
+
+async function persistPublicacion(id, usuarioId, cursoId, titulo, contenido) {
+  if (!db) return;
+  try {
+    const [rows] = await db.execute("SELECT id FROM publicaciones WHERE id = ?", [id]);
+    if (rows && rows.length > 0) return;
+    await db.execute(
+      "INSERT INTO publicaciones (id, usuario_id, curso_id, titulo, contenido, estado, vistas) VALUES (?, ?, ?, ?, ?, 'abierto', 0)",
+      [id, usuarioId, cursoId, titulo, contenido]
+    );
+  } catch (err) {
+    console.warn("[temas] Error al persistir publicacion:", err.message);
+  }
+}
 
 app.get("/health", (req, res) => {
   res.json({ service: "temas", status: "ok" });
@@ -25,7 +49,7 @@ app.get("/temas/:id", (req, res) => {
   return res.json(tema);
 });
 
-app.post("/temas", (req, res) => {
+app.post("/temas", async (req, res) => {
   const { titulo, contenido, cursoId, usuarioId } = req.body;
   if (!titulo || !contenido || !cursoId || !usuarioId) {
     return res
@@ -43,6 +67,9 @@ app.post("/temas", (req, res) => {
   };
   nextId += 1;
   temas.push(nuevo);
+
+  await persistPublicacion(nuevo.id, nuevo.usuarioId, nuevo.cursoId, titulo, contenido);
+
   return res.status(201).json(nuevo);
 });
 

@@ -7,6 +7,8 @@ const { store, nextId, ensureDefaultCourse } = require("./store");
 const microservicios = require("../clients/microservicios");
 const db = require("../db/connection");
 const dbUsuarios = require("../db/usuarios");
+const dbComentarios = require("../db/comentarios");
+const dbPublicaciones = require("../db/publicaciones");
 
 const temaTagsOverlay = {};
 
@@ -96,6 +98,9 @@ async function createTema(titulo, contenido, cursoId, usuarioId) {
     vistas: 0,
     createdAt: new Date().toISOString()
   };
+  if (db.isConfigured()) {
+    await dbPublicaciones.ensureExists(nuevo.id, usuarioId, cursoId, titulo, contenido);
+  }
   store.temas.push(nuevo);
   return nuevo;
 }
@@ -137,6 +142,10 @@ async function getComentariosByTemaId(temaId) {
     const ms = await microservicios.comentarios.getByTemaId(numId);
     if (Array.isArray(ms)) return ms;
   }
+  if (db.isConfigured()) {
+    const rows = await dbComentarios.getByPublicacionId(numId);
+    if (Array.isArray(rows)) return rows;
+  }
   return store.comentarios.filter((c) => c.temaId === numId);
 }
 
@@ -144,6 +153,14 @@ async function createComentario(contenido, temaId, usuarioId, parentId = null) {
   if (microservicios.isEnabled()) {
     const ms = await microservicios.comentarios.create(contenido, temaId, usuarioId, parentId);
     if (ms) return ms;
+  }
+  if (db.isConfigured()) {
+    const tema = await getTemaById(temaId);
+    if (tema) {
+      await dbPublicaciones.ensureExists(temaId, tema.usuarioId, tema.cursoId, tema.titulo, tema.contenido);
+    }
+    const creado = await dbComentarios.create(usuarioId, temaId, contenido, parentId);
+    if (creado) return creado;
   }
   const nuevo = {
     id: nextId("comentarios"),
