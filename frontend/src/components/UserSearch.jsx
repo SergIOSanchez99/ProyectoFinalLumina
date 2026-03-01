@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, MessageCircle, UserPlus } from 'lucide-react'
+import { Search, SendHorizontal, UserPlus } from 'lucide-react'
 import { messagingService } from '../services/messagingService'
 import { userService } from '../services/userService'
 import toast from 'react-hot-toast'
@@ -140,7 +140,7 @@ function UserSearch() {
                     onClick={(e) => handleMessageClick(e, u)}
                     title="Enviar mensaje"
                   >
-                    <MessageCircle size={18} />
+                    <SendHorizontal size={22} />
                   </button>
                 </li>
               ))}

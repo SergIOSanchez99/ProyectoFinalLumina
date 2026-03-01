@@ -2,6 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const { store } = require("../../data/store");
 const dbUsuarios = require("../../db/usuarios");
+const dbMessaging = require("../../db/messaging");
 const db = require("../../db/connection");
 
 const router = express.Router();
@@ -37,6 +38,10 @@ async function getUserById(id) {
 }
 
 router.get("/conversations", async (req, res) => {
+  if (db.isConfigured()) {
+    const convs = await dbMessaging.getConversations(req.userId);
+    return res.json(convs);
+  }
   const convs = [];
   for (const [id, participants] of conversaciones) {
     const otherId = participants.find((p) => p !== req.userId);
@@ -55,9 +60,15 @@ router.get("/conversations", async (req, res) => {
   return res.json(convs);
 });
 
-router.post("/conversations", (req, res) => {
+router.post("/conversations", async (req, res) => {
   const { otherUserId } = req.body;
   if (!otherUserId) return res.status(400).json({ message: "otherUserId requerido" });
+
+  if (db.isConfigured()) {
+    const id = await dbMessaging.getOrCreateConversation(req.userId, Number(otherUserId));
+    if (id) return res.status(201).json({ conversationId: id });
+    return res.status(500).json({ message: "Error al crear conversación" });
+  }
 
   const existente = [...conversaciones.entries()].find(
     ([_, p]) => p.includes(req.userId) && p.includes(Number(otherUserId))
@@ -74,6 +85,16 @@ router.post("/conversations", (req, res) => {
 
 router.get("/conversations/:id/messages", async (req, res) => {
   const id = Number(req.params.id);
+
+  if (db.isConfigured()) {
+    const msgs = await dbMessaging.getMessages(id, req.userId);
+    if (msgs.length === 0) {
+      const ok = await dbMessaging.isParticipant(id, req.userId);
+      if (!ok) return res.status(404).json({ message: "Conversación no encontrada" });
+    }
+    return res.json(msgs);
+  }
+
   const participants = conversaciones.get(id);
   if (!participants || !participants.includes(req.userId)) {
     return res.status(404).json({ message: "Conversación no encontrada" });
@@ -95,6 +116,12 @@ router.post("/conversations/:id/messages", async (req, res) => {
   const id = Number(req.params.id);
   const { content } = req.body;
   if (!content) return res.status(400).json({ message: "content requerido" });
+
+  if (db.isConfigured()) {
+    const nuevo = await dbMessaging.createMessage(id, req.userId, content);
+    if (nuevo) return res.status(201).json(nuevo);
+    return res.status(404).json({ message: "Conversación no encontrada" });
+  }
 
   const participants = conversaciones.get(id);
   if (!participants || !participants.includes(req.userId)) {

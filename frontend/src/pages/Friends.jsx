@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, MessageCircle } from 'lucide-react'
+import { Users, SendHorizontal } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { userService } from '../services/userService'
 import { messagingService } from '../services/messagingService'
@@ -86,7 +86,7 @@ function Friends() {
                   onClick={(e) => handleMessage(e, friend)}
                   title="Enviar mensaje"
                 >
-                  <MessageCircle size={18} />
+                  <SendHorizontal size={24} />
                 </button>
               </div>
             ))}

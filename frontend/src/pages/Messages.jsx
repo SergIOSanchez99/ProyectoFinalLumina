@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { MessageCircle, Send, Search, UserPlus } from 'lucide-react'
+import { MessageCircle, SendHorizontal, Search, UserPlus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { messagingService } from '../services/messagingService'
 import toast from 'react-hot-toast'
@@ -312,7 +312,7 @@ function Messages() {
                   disabled={sending}
                 />
                 <button type="submit" className="btn-send" disabled={!newMessage.trim() || sending}>
-                  <Send size={20} />
+                  <SendHorizontal size={24} />
                 </button>
               </form>
             </>

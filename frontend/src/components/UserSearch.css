@@ -138,10 +138,10 @@
 }
 
 .user-search-msg-btn {
-  padding: 8px;
+  padding: 10px 12px;
   border: none;
-  background: var(--bg-tertiary);
-  border-radius: 10px;
+  background: var(--primary-light);
+  border-radius: 12px;
   color: var(--primary-color);
   cursor: pointer;
   display: flex;
