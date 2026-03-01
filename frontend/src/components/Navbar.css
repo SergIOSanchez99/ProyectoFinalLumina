@@ -26,6 +26,7 @@
   align-items: center;
   gap: 8px;
   transition: color 0.2s;
+  flex-shrink: 0;
 }
 
 .navbar-logo:hover {
@@ -56,6 +57,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .navbar-link {

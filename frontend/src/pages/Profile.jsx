@@ -13,6 +13,7 @@ function Profile() {
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(null)
+  const [isFollowing, setIsFollowing] = useState(false)
   const fileInputRef = useRef(null)
 
   const isOwnProfile = !userId || userId === currentUser.id
@@ -20,6 +21,12 @@ function Profile() {
   useEffect(() => {
     loadProfile()
   }, [userId])
+
+  useEffect(() => {
+    if (profile && !isOwnProfile) {
+      userService.isFollowing(profile.id).then(setIsFollowing)
+    }
+  }, [profile?.id, isOwnProfile])
 
   const loadProfile = async () => {
     try {
@@ -59,6 +66,29 @@ function Profile() {
       setAvatarPreview(reader.result)
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleFollow = async () => {
+    try {
+      await userService.follow(profile.id)
+      setIsFollowing(true)
+      toast.success('Ahora sigues a este usuario')
+    } catch (error) {
+      if (error.response?.status === 409) {
+        setIsFollowing(true)
+      }
+      toast.error(error.response?.data?.error || 'Error al seguir')
+    }
+  }
+
+  const handleUnfollow = async () => {
+    try {
+      await userService.unfollow(profile.id)
+      setIsFollowing(false)
+      toast.success('Dejaste de seguir')
+    } catch {
+      toast.error('Error al dejar de seguir')
+    }
   }
 
   const handleSaveProfile = async (e) => {
@@ -109,7 +139,7 @@ function Profile() {
           <p className="profile-university">{profile?.university}</p>
           <p className="profile-career">{profile?.career}</p>
         </div>
-        {isOwnProfile && (
+        {isOwnProfile ? (
           <button 
             className="btn btn-outline"
             onClick={() => {
@@ -118,6 +148,13 @@ function Profile() {
             }}
           >
             {isEditing ? 'Cancelar' : 'Editar Perfil'}
+          </button>
+        ) : (
+          <button
+            className={`btn ${isFollowing ? 'btn-outline' : 'btn-primary'}`}
+            onClick={isFollowing ? handleUnfollow : handleFollow}
+          >
+            {isFollowing ? 'Siguiendo' : 'Agregar amigo'}
           </button>
         )}
       </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Home, BookOpen, User, BarChart2 } from 'lucide-react'
+import { Home, BookOpen, BarChart2, Users } from 'lucide-react'
 import { contentService } from '../services/contentService'
 import { useAuth } from '../hooks/useAuth'
 import toast from 'react-hot-toast'
@@ -75,11 +75,11 @@ function Feed() {
             </span>
             Cursos
           </Link>
-          <Link to="/profile" className="feed-nav-item">
+          <Link to="/friends" className="feed-nav-item">
             <span className="feed-nav-icon">
-              <User size={20} />
+              <Users size={20} />
             </span>
-            Mi perfil
+            Amigos
           </Link>
           <Link to="/impact" className="feed-nav-item">
             <span className="feed-nav-icon">
@@ -166,11 +166,11 @@ function Feed() {
             </span>
             Explorar cursos
           </Link>
-          <Link to="/impact" className="feed-widget-item">
+          <Link to="/friends" className="feed-widget-item">
             <span className="feed-nav-icon">
-              <BarChart2 size={20} />
+              <Users size={20} />
             </span>
-            Ver estadísticas
+            Amigos
           </Link>
         </div>
       </aside>

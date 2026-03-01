@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Sun } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import UserSearch from './UserSearch'
 import './Navbar.css'
 
 function Navbar() {
@@ -15,6 +16,8 @@ function Navbar() {
           </span>
           <span>Lumina</span>
         </Link>
+
+        <UserSearch />
 
         <div className="navbar-menu">
           <div className="navbar-user">

@@ -11,6 +11,7 @@ import CourseView from './pages/CourseView'
 import CollaborativeEditor from './pages/CollaborativeEditor'
 import Profile from './pages/Profile'
 import ImpactDashboard from './pages/ImpactDashboard'
+import Friends from './pages/Friends'
 import Messages from './pages/Messages'
 
 // Components
@@ -68,6 +69,11 @@ function AppContent() {
             <Route path="/impact" element={
               <ProtectedRoute>
                 <ImpactDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/friends" element={
+              <ProtectedRoute>
+                <Friends />
               </ProtectedRoute>
             } />
             
