@@ -333,3 +333,67 @@
   align-self: flex-end;
   border-radius: 10px;
 }
+
+/* Threaded Comments Styling */
+.comment-node {
+  margin-bottom: 16px;
+}
+
+.nested-comments {
+  margin-left: 20px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border-light);
+  margin-top: 10px;
+}
+
+.comment-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.comment-actions {
+  margin-top: 6px;
+}
+
+.reply-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.reply-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.reply-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-tertiary);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.cancel-reply-btn {
+  background: none;
+  border: none;
+  color: var(--danger-color);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 4px;
+}
+
+.cancel-reply-btn:hover {
+  opacity: 0.8;
+}

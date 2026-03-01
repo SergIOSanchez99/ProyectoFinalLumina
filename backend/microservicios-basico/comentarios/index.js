@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
+const db = require("./config/db");
 
 const app = express();
 const PORT = process.env.PORT || 4204;
@@ -7,86 +9,119 @@ const PORT = process.env.PORT || 4204;
 app.use(cors());
 app.use(express.json());
 
-const comentarios = [];
-let nextId = 1;
-
 app.get("/health", (req, res) => {
   res.json({ service: "comentarios", status: "ok" });
 });
 
-app.get("/comentarios", (req, res) => {
-  const { temaId } = req.query;
-  let result = comentarios;
-  if (temaId) {
-    result = comentarios.filter((c) => c.temaId === Number(temaId));
+app.get("/comentarios", async (req, res) => {
+  try {
+    const { publicacion_id } = req.query;
+    let query = "SELECT * FROM comentarios";
+    const params = [];
+
+    if (publicacion_id) {
+      query += " WHERE publicacion_id = ?";
+      params.push(Number(publicacion_id));
+    }
+
+    const [rows] = await db.execute(query, params);
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener comentarios" });
   }
-  res.json(result);
 });
 
-app.get("/comentarios/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const comentario = comentarios.find((item) => item.id === id);
-  if (!comentario) {
-    return res.status(404).json({ error: "Comentario no encontrado" });
+app.get("/comentarios/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [rows] = await db.execute("SELECT * FROM comentarios WHERE id = ?", [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Comentario no encontrado" });
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener comentario" });
   }
-  return res.json(comentario);
 });
 
-app.post("/comentarios", (req, res) => {
-  const { contenido, temaId, usuarioId } = req.body;
-  if (!contenido || !temaId || !usuarioId) {
-    return res
-      .status(400)
-      .json({ error: "contenido, temaId y usuarioId son obligatorios" });
+app.post("/comentarios", async (req, res) => {
+  try {
+    const { usuario_id, publicacion_id, parent_id, contenido, es_solucion } = req.body;
+
+    if (!usuario_id || !publicacion_id || !contenido) {
+      return res.status(400).json({ error: "usuario_id, publicacion_id y contenido son obligatorios" });
+    }
+
+    const query = `
+      INSERT INTO comentarios (usuario_id, publicacion_id, parent_id, contenido, es_solucion) 
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    const params = [
+      Number(usuario_id),
+      Number(publicacion_id),
+      parent_id ? Number(parent_id) : null,
+      contenido,
+      es_solucion || false
+    ];
+
+    const [result] = await db.execute(query, params);
+
+    res.status(201).json({
+      id: result.insertId,
+      usuario_id: Number(usuario_id),
+      publicacion_id: Number(publicacion_id),
+      parent_id: parent_id ? Number(parent_id) : null,
+      contenido,
+      es_solucion: es_solucion || false
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al crear comentario" });
   }
-
-  const nuevo = {
-    id: nextId,
-    contenido,
-    temaId: Number(temaId),
-    usuarioId: Number(usuarioId),
-    createdAt: new Date().toISOString()
-  };
-  nextId += 1;
-  comentarios.push(nuevo);
-
-  return res.status(201).json(nuevo);
 });
 
-app.put("/comentarios/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const index = comentarios.findIndex((item) => item.id === id);
-  if (index < 0) {
-    return res.status(404).json({ error: "Comentario no encontrado" });
+app.put("/comentarios/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { contenido, es_solucion } = req.body;
+
+    if (!contenido) {
+      return res.status(400).json({ error: "contenido es obligatorio para actualizar" });
+    }
+
+    const [result] = await db.execute(
+      "UPDATE comentarios SET contenido = ?, es_solucion = ? WHERE id = ?",
+      [contenido, es_solucion || false, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Comentario no encontrado" });
+    }
+
+    const [rows] = await db.execute("SELECT * FROM comentarios WHERE id = ?", [id]);
+    res.json(rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al actualizar comentario" });
   }
-
-  const { contenido, temaId, usuarioId } = req.body;
-  if (!contenido || !temaId || !usuarioId) {
-    return res
-      .status(400)
-      .json({ error: "contenido, temaId y usuarioId son obligatorios" });
-  }
-
-  comentarios[index] = {
-    id,
-    contenido,
-    temaId: Number(temaId),
-    usuarioId: Number(usuarioId),
-    createdAt: comentarios[index].createdAt
-  };
-
-  return res.json(comentarios[index]);
 });
 
-app.delete("/comentarios/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const index = comentarios.findIndex((item) => item.id === id);
-  if (index < 0) {
-    return res.status(404).json({ error: "Comentario no encontrado" });
-  }
+app.delete("/comentarios/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [result] = await db.execute("DELETE FROM comentarios WHERE id = ?", [id]);
 
-  comentarios.splice(index, 1);
-  return res.status(204).send();
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Comentario no encontrado" });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al eliminar comentario" });
+  }
 });
 
 app.listen(PORT, () => {

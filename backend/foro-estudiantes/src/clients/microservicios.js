@@ -74,9 +74,14 @@ const microservicios = {
   },
 
   comentarios: {
-    getByTemaId: (temaId) => get(`/api/comentarios?temaId=${temaId}`),
-    create: (contenido, temaId, usuarioId) =>
-      post("/api/comentarios", { contenido, temaId, usuarioId })
+    getByTemaId: (temaId) => get(`/api/comentarios?temaId=${temaId}&publicacion_id=${temaId}`),
+    create: (contenido, temaId, usuarioId, parentId = null) =>
+      post("/api/comentarios", {
+        contenido,
+        temaId, publicacion_id: temaId,
+        usuarioId, usuario_id: usuarioId,
+        parentId, parent_id: parentId
+      })
   },
 
   chatbot: {

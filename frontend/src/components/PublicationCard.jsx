@@ -23,6 +23,31 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
   const [showReactionPicker, setShowReactionPicker] = useState(false)
   const reactionPickerRef = useRef(null)
 
+  const [replyingTo, setReplyingTo] = useState(null)
+
+  const buildCommentTree = (commentsList) => {
+    const commentMap = {}
+    const tree = []
+
+    commentsList.forEach(comment => {
+      commentMap[comment.id] = { ...comment, children: [] }
+    })
+
+    commentsList.forEach(comment => {
+      if (comment.parentId || comment.parent_id) {
+        const pId = comment.parentId || comment.parent_id
+        if (commentMap[pId]) {
+          commentMap[pId].children.push(commentMap[comment.id])
+        } else {
+          tree.push(commentMap[comment.id])
+        }
+      } else {
+        tree.push(commentMap[comment.id])
+      }
+    })
+    return tree
+  }
+
   // Cerrar picker al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -62,9 +87,11 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
     if (!commentInput.trim()) return
 
     try {
-      const newComment = await contentService.createComment(publication.id, commentInput)
+      const parentId = replyingTo ? replyingTo.id : null
+      const newComment = await contentService.createComment(publication.id, commentInput, parentId)
       setComments([...comments, newComment])
       setCommentInput('')
+      setReplyingTo(null)
       toast.success('Comentario agregado')
     } catch (error) {
       toast.error('Error al agregar comentario')
@@ -81,12 +108,55 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
   // Calcular reacción total y principal
   const totalReactions = publication.totalReactions || 0
   const userReaction = publication.userReaction
-  
+
   // Obtener las top 3 reacciones
   const topReactions = Object.entries(publication.reactions || {})
     .filter(([_, count]) => count > 0)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
+
+  const commentTree = buildCommentTree(comments)
+
+  const CommentNode = ({ comment, depth = 0 }) => (
+    <div className={`comment-node depth-${depth}`}>
+      <div className="comment">
+        <div className="comment-avatar">
+          {comment.author?.name?.charAt(0).toUpperCase()}
+        </div>
+        <div className="comment-content">
+          <div className="comment-header-row">
+            <h5>{comment.author?.name}</h5>
+            <span className="comment-time">
+              {formatDistanceToNow(new Date(comment.createdAt || new Date()), {
+                addSuffix: true,
+                locale: es
+              })}
+            </span>
+          </div>
+          <p>{comment.content}</p>
+          <div className="comment-actions">
+            <button
+              className="reply-btn"
+              onClick={() => {
+                setReplyingTo(comment)
+                // Opcional: enfocar el input de comentario aquí si tuviéramos una referencia
+              }}
+            >
+              Responder
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* Recursivamente renderizar las respuestas (hijos) */}
+      {comment.children && comment.children.length > 0 && (
+        <div className="nested-comments">
+          {comment.children.map(child => (
+            <CommentNode key={child.id} comment={child} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <div className="publication-card card">
@@ -98,15 +168,15 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
           <div>
             <h4>{publication.author?.name}</h4>
             <span className="publication-time">
-              {formatDistanceToNow(new Date(publication.createdAt), { 
+              {formatDistanceToNow(new Date(publication.createdAt), {
                 addSuffix: true,
-                locale: es 
+                locale: es
               })}
             </span>
           </div>
         </div>
         {isOwner && (
-          <button 
+          <button
             className="btn-delete"
             onClick={() => onDelete(publication.id)}
             title="Eliminar publicación"
@@ -120,8 +190,8 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
         <h3>{publication.title}</h3>
         <p>{publication.content}</p>
         {publication.tags && (() => {
-          const tags = Array.isArray(publication.tags) 
-            ? publication.tags 
+          const tags = Array.isArray(publication.tags)
+            ? publication.tags
             : String(publication.tags).split(',').map(t => t.trim()).filter(Boolean)
           return tags.length > 0 ? (
             <div className="publication-tags">
@@ -151,7 +221,7 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
         <div className="publication-actions">
           {/* Botón de reacción con picker */}
           <div className="reaction-button-container" ref={reactionPickerRef}>
-            <button 
+            <button
               className={`reaction-btn ${userReaction ? 'active' : ''}`}
               onClick={() => userReaction ? handleReaction(userReaction) : setShowReactionPicker(!showReactionPicker)}
               onMouseEnter={() => setShowReactionPicker(true)}
@@ -191,7 +261,7 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
             )}
           </div>
 
-          <button 
+          <button
             className="comment-btn"
             onClick={loadComments}
             title="Ver comentarios"
@@ -207,38 +277,36 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
           <div className="comments-list">
             {loadingComments ? (
               <div className="loading-spinner">Cargando...</div>
-            ) : comments.length === 0 ? (
+            ) : commentTree.length === 0 ? (
               <p className="no-comments">No hay comentarios aún</p>
             ) : (
-              comments.map(comment => (
-                <div key={comment.id} className="comment">
-                  <div className="comment-avatar">
-                    {comment.author?.name?.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="comment-content">
-                    <h5>{comment.author?.name}</h5>
-                    <p>{comment.content}</p>
-                    <span className="comment-time">
-                      {formatDistanceToNow(new Date(comment.createdAt), { 
-                        addSuffix: true,
-                        locale: es 
-                      })}
-                    </span>
-                  </div>
-                </div>
+              commentTree.map(comment => (
+                <CommentNode key={comment.id} comment={comment} depth={0} />
               ))
             )}
           </div>
 
           <div className="comment-input-section">
+            {replyingTo && (
+              <div className="reply-indicator">
+                <span>Respondiendo a <strong>{replyingTo.author?.name || 'Usuario'}</strong></span>
+                <button
+                  className="cancel-reply-btn"
+                  onClick={() => setReplyingTo(null)}
+                  title="Cancelar respuesta"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <textarea
               className="comment-input"
-              placeholder="Escribe un comentario..."
+              placeholder={replyingTo ? 'Escribe tu respuesta...' : 'Escribe un comentario...'}
               value={commentInput}
               onChange={(e) => setCommentInput(e.target.value)}
               rows={2}
             />
-            <button 
+            <button
               className="btn btn-primary btn-sm"
               onClick={handleComment}
             >

@@ -38,8 +38,12 @@ export const contentService = {
     return response.data
   },
 
-  createComment: async (publicationId, content) => {
-    const response = await api.post(`/api/content/publications/${publicationId}/comments`, { content })
+  createComment: async (publicationId, content, parentId = null) => {
+    const payload = { content }
+    if (parentId) {
+      payload.parent_id = parentId
+    }
+    const response = await api.post(`/api/content/publications/${publicationId}/comments`, payload)
     return response.data
   },
 

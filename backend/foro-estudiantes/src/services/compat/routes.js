@@ -65,12 +65,13 @@ async function mapTemaToPublication(tema, userId) {
 }
 
 async function mapComentarioToComment(comentario) {
-  const autor = await getUsuarioById(comentario.usuarioId);
+  const autor = await getUsuarioById(comentario.usuarioId || comentario.usuario_id);
   return {
     id: comentario.id,
     content: comentario.contenido,
+    parentId: comentario.parentId || comentario.parent_id || null,
     author: autor ? { id: autor.id, name: autor.nombre } : null,
-    createdAt: comentario.createdAt
+    createdAt: comentario.createdAt || comentario.created_at
   };
 }
 
@@ -140,13 +141,14 @@ router.get("/publications/:id/comments", async (req, res) => {
 
 router.post("/publications/:id/comments", async (req, res) => {
   const temaId = Number(req.params.id);
-  const { content } = req.body;
+  const { content, parentId, parent_id } = req.body;
+  const pId = parentId || parent_id;
   if (!content) return res.status(400).json({ message: "Contenido es obligatorio" });
 
   const tema = await getTemaById(temaId);
   if (!tema) return res.status(404).json({ message: "Publicación no encontrada" });
 
-  const nuevo = await createComentario(content, temaId, req.userId);
+  const nuevo = await createComentario(content, temaId, req.userId, pId);
   return res.status(201).json(await mapComentarioToComment(nuevo));
 });
 

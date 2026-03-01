@@ -135,14 +135,14 @@ async function getComentariosByTemaId(temaId) {
   const numId = Number(temaId);
   if (microservicios.isEnabled()) {
     const ms = await microservicios.comentarios.getByTemaId(numId);
-    if (Array.isArray(ms)) return ms.filter((c) => !c.parentId);
+    if (Array.isArray(ms)) return ms;
   }
-  return store.comentarios.filter((c) => c.temaId === numId && !c.parentId);
+  return store.comentarios.filter((c) => c.temaId === numId);
 }
 
-async function createComentario(contenido, temaId, usuarioId) {
+async function createComentario(contenido, temaId, usuarioId, parentId = null) {
   if (microservicios.isEnabled()) {
-    const ms = await microservicios.comentarios.create(contenido, temaId, usuarioId);
+    const ms = await microservicios.comentarios.create(contenido, temaId, usuarioId, parentId);
     if (ms) return ms;
   }
   const nuevo = {
@@ -150,7 +150,7 @@ async function createComentario(contenido, temaId, usuarioId) {
     contenido,
     temaId,
     usuarioId,
-    parentId: null,
+    parentId: parentId,
     esSolucion: false,
     createdAt: new Date().toISOString()
   };
