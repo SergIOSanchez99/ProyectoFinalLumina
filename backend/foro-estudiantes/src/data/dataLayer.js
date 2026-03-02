@@ -78,13 +78,13 @@ async function ensureCursoGeneral() {
 }
 
 async function getTemas() {
+  if (db.isConfigured()) {
+    const rows = await dbPublicaciones.getAll();
+    if (Array.isArray(rows)) return rows;
+  }
   if (microservicios.isEnabled()) {
     const ms = await microservicios.temas.getAll();
     if (Array.isArray(ms)) return ms;
-  }
-  if (db.isConfigured()) {
-    const rows = await dbPublicaciones.getAll();
-    if (Array.isArray(rows) && rows.length > 0) return rows;
   }
   return store.temas;
 }
@@ -103,6 +103,18 @@ async function getTemaById(id) {
 }
 
 async function createTema(titulo, contenido, cursoId, usuarioId) {
+  if (db.isConfigured()) {
+    const curso = (await getCursos()).find((c) => c.id === cursoId) || store.cursos.find((c) => c.id === cursoId);
+    if (curso) {
+      await dbCursos.ensureExists(cursoId, curso.nombre, curso.codigo, curso.descripcion, curso.docente);
+    }
+    const creado = await dbPublicaciones.create(usuarioId, cursoId, titulo, contenido);
+    if (creado) {
+      const nuevo = { ...creado, tags: [] };
+      store.temas.push(nuevo);
+      return nuevo;
+    }
+  }
   if (microservicios.isEnabled()) {
     const ms = await microservicios.temas.create(titulo, contenido, cursoId, usuarioId);
     if (ms) return ms;
@@ -118,19 +130,27 @@ async function createTema(titulo, contenido, cursoId, usuarioId) {
     vistas: 0,
     createdAt: new Date().toISOString()
   };
-  if (db.isConfigured()) {
-    const curso = (await getCursos()).find((c) => c.id === cursoId) || store.cursos.find((c) => c.id === cursoId);
-    if (curso) {
-      await dbCursos.ensureExists(cursoId, curso.nombre, curso.codigo, curso.descripcion, curso.docente);
-    }
-    await dbPublicaciones.ensureExists(nuevo.id, usuarioId, cursoId, titulo, contenido);
-  }
   store.temas.push(nuevo);
   return nuevo;
 }
 
 async function updateTema(id, data) {
   const numId = Number(id);
+  if (db.isConfigured()) {
+    const actualizado = await dbPublicaciones.update(numId, {
+      titulo: data.titulo,
+      contenido: data.contenido
+    });
+    if (actualizado) {
+      const idx = store.temas.findIndex((t) => t.id === numId);
+      if (idx >= 0) {
+        if (data.titulo) store.temas[idx].titulo = data.titulo;
+        if (data.contenido) store.temas[idx].contenido = data.contenido;
+        if (data.tags) store.temas[idx].tags = data.tags;
+      }
+      return actualizado;
+    }
+  }
   if (microservicios.isEnabled()) {
     const tema = await getTemaById(numId);
     if (tema) {

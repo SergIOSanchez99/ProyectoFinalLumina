@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { MessageCircle, SendHorizontal, Search, UserPlus } from 'lucide-react'
+import { MessageCircle, SendHorizontal, Search, UserPlus, Check, CheckCheck } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { messagingService } from '../services/messagingService'
+import { messagingSocket } from '../services/messagingSocket'
 import toast from 'react-hot-toast'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -47,8 +48,34 @@ function Messages() {
         const conv = conversations.find(c => c.id === prev.id)
         return conv ? { ...prev, unreadCount: 0 } : prev
       })
+      messagingSocket.joinConversation(selectedConversation.id)
+      return () => messagingSocket.leaveConversation(selectedConversation.id)
     }
   }, [selectedConversation?.id])
+
+  useEffect(() => {
+    messagingSocket.connect()
+    const onNew = (msg) => {
+      setMessages(prev => {
+        if (prev.some(p => p.id === msg.id)) return prev
+        return [...prev, { ...msg }]
+      })
+      loadConversations()
+    }
+    const onSeen = ({ messageIds }) => {
+      setMessages(prev => prev.map(m =>
+        messageIds.includes(m.id) ? { ...m, seen: true, seenAt: new Date().toISOString() } : m
+      ))
+    }
+    messagingSocket.onNewMessage(onNew)
+    messagingSocket.onMessagesSeen(onSeen)
+    messagingSocket.onConvUpdate(loadConversations)
+    return () => {
+      messagingSocket.offNewMessage(onNew)
+      messagingSocket.offMessagesSeen(onSeen)
+      messagingSocket.offConvUpdate(loadConversations)
+    }
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -75,6 +102,7 @@ function Messages() {
           c.id === conversationId ? { ...c, unreadCount: 0 } : c
         )
       )
+      await messagingService.markAsRead(conversationId)
     } catch (error) {
       toast.error('Error al cargar mensajes')
     }
@@ -294,8 +322,15 @@ function Messages() {
                     )}
                     <div className="message-content">
                       <p>{msg.content}</p>
-                      <span className="message-time">
-                        {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: es })}
+                      <span className="message-meta">
+                        <span className="message-time">
+                          {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true, locale: es })}
+                        </span>
+                        {msg.senderId === user.id && (
+                          <span className="message-status" title={msg.seen ? 'Visto' : 'Enviado'}>
+                            {msg.seen ? <CheckCheck size={14} /> : <Check size={14} />}
+                          </span>
+                        )}
                       </span>
                     </div>
                   </div>

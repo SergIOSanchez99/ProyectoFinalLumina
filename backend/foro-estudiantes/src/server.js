@@ -1,8 +1,11 @@
 require("dotenv").config();
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
+const { Server } = require("socket.io");
 const { ensureDefaultCourse } = require("./data/store");
 const microservicios = require("./clients/microservicios");
+const messagingSocket = require("./services/compat/messagingSocket");
 
 const usuariosRoutes = require("./services/usuarios/routes");
 const cursosRoutes = require("./services/cursos/routes");
@@ -17,6 +20,10 @@ const chatbotCompat = require("./services/compat/chatbotCompat");
 const messagingCompat = require("./services/compat/messagingCompat");
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" }, path: "/socket.io" });
+messagingSocket.setupMessagingSocket(io);
+
 const PORT = process.env.PORT || 4300;
 
 app.use(cors());
@@ -51,7 +58,7 @@ app.use((req, res) => {
 
 ensureDefaultCourse();
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Foro Estudiantes ejecutandose en http://localhost:${PORT}`);
   if (require("./db/connection").isConfigured()) {
     console.log("  -> Conectado a base de datos (DB_NAME)");

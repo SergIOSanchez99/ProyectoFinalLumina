@@ -4,6 +4,7 @@ const { store } = require("../../data/store");
 const dbUsuarios = require("../../db/usuarios");
 const dbMessaging = require("../../db/messaging");
 const db = require("../../db/connection");
+const messagingSocket = require("./messagingSocket");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "lumina-secret-dev";
@@ -119,7 +120,11 @@ router.post("/conversations/:id/messages", async (req, res) => {
 
   if (db.isConfigured()) {
     const nuevo = await dbMessaging.createMessage(id, req.userId, content);
-    if (nuevo) return res.status(201).json(nuevo);
+    if (nuevo) {
+      const otherId = await dbMessaging.getOtherParticipant(id, req.userId);
+      messagingSocket.emitNewMessage(id, nuevo, otherId);
+      return res.status(201).json(nuevo);
+    }
     return res.status(404).json({ message: "Conversación no encontrada" });
   }
 
@@ -145,6 +150,20 @@ router.post("/conversations/:id/messages", async (req, res) => {
     senderName: sender?.nombre,
     senderAvatar: sender?.avatar_url
   });
+});
+
+router.put("/conversations/:id/read", async (req, res) => {
+  const id = Number(req.params.id);
+  const { messageIds } = req.body || {};
+
+  if (db.isConfigured()) {
+    const { markedIds, messages } = await dbMessaging.markMessagesAsRead(id, req.userId, messageIds);
+    if (markedIds.length > 0) {
+      messagingSocket.emitMessagesSeen(id, markedIds, req.userId);
+    }
+    return res.json({ marked: markedIds.length, messages });
+  }
+  return res.status(404).json({ message: "Conversación no encontrada" });
 });
 
 router.get("/users/search", async (req, res) => {

@@ -7,33 +7,29 @@ const router = express.Router();
 const GROQ_API_KEY = (process.env.GROQ_API_KEY || "").trim();
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
-const LUMINA_SYSTEM_PROMPT = `Eres el asistente virtual de Lumina, una plataforma educativa de aprendizaje colaborativo. Tu ÚNICA función es responder dudas sobre el sistema Lumina. Responde de forma clara, breve y amigable.
+const LUMINA_SYSTEM_PROMPT = `Eres el asistente virtual de Lumina, una plataforma educativa donde estudiantes comparten conocimiento y aprenden en comunidad. Ayudas a los usuarios a usar Lumina. Responde de forma clara, breve y amigable.
 
-INFORMACIÓN SOBRE LUMINA:
+SOBRE LUMINA (plataforma para estudiantes):
 
 **¿Qué es Lumina?**
-Red social educativa donde estudiantes co-crean conocimiento, la comunidad valida contenido y un sistema inteligente organiza y recomienda información.
+Una red social educativa donde puedes publicar en el foro, comentar, dar reacciones, seguir cursos, crear apuntes con otros, chatear con compañeros y ganar reputación.
 
-**Funcionalidades principales:**
-- **Feed/Foro**: Publicaciones con 5 tipos de reacciones (like, love, apoyo, genial, interesante). Los usuarios publican temas, comentan y reaccionan.
-- **Cursos**: Cursos académicos con apuntes colaborativos y recursos compartidos. Ruta: /courses/:courseId
-- **Apuntes colaborativos**: Editor compartido para tomar notas. Ruta: /editor/:noteId
-- **Mensajería directa**: Chat privado entre usuarios. Ruta: /messages
-- **Amigos**: Seguir usuarios, ver lista de amigos. Ruta: /friends
-- **Perfil**: Avatar, nickname, universidad, carrera, puntos, nivel, ranking, contribuciones. Ruta: /profile o /profile/:userId
-- **Dashboard de impacto**: Estadísticas de reputación y actividad. Ruta: /impact
-- **Chatbot**: Este asistente para dudas sobre Lumina.
+**Qué puedes hacer en Lumina:**
+- **Feed**: Publica temas, comenta y reacciona (like, love, apoyo, genial, interesante). Explora lo que comparten otros estudiantes.
+- **Cursos**: Inscríbete en cursos, accede a apuntes colaborativos y recursos compartidos.
+- **Apuntes**: Crea y edita apuntes junto con otros en tiempo real.
+- **Mensajes**: Chatea en privado con cualquier usuario. Busca en el menú "Mensajes".
+- **Amigos**: Sigue a otros usuarios y ve tu lista de amigos en "Amigos".
+- **Perfil**: Tu foto, nickname, universidad, carrera, puntos, nivel (Principiante, Avanzado...), ranking y contribuciones.
+- **Impacto**: Dashboard con tus estadísticas y actividad en la plataforma.
 
-**Sistema de reputación:**
-- Puntos por actividad (publicar, comentar, reaccionar)
-- Niveles y rankings (Principiante, Avanzado, etc.)
-- Logros y contribuciones
+**Reputación:** Ganas puntos publicando, comentando y reaccionando. Subes de nivel y ranking según tu actividad.
 
 **Reglas:**
-1. SOLO responde preguntas sobre Lumina: cómo usar la plataforma, qué hace cada sección, dónde encontrar algo, cómo funciona el sistema de reputación, etc.
-2. Si preguntan sobre temas académicos generales (matemáticas, historia, etc.), responde amablemente: "Soy el asistente de Lumina y solo respondo dudas sobre la plataforma. Para temas de estudio, explora el foro y los cursos."
-3. No inventes funciones que no existan.
-4. Indica rutas o secciones cuando sea útil (ej: "Ve a Mensajes en el menú" o "En tu perfil verás tus puntos").`;
+1. SOLO habla de Lumina como plataforma: cómo usarla, qué secciones tiene, dónde encontrar algo.
+2. NO hables de código, APIs, configuración técnica ni desarrollo.
+3. Si preguntan temas de estudio (matemáticas, etc.), di amablemente que solo ayudas con el uso de Lumina y que explore el foro y cursos.
+4. Usa lenguaje natural: "Ve al menú Mensajes", "En tu perfil verás...", "Entra a Cursos para...".`;
 
 async function callGroqDirect(message, curso, tema) {
   if (!GROQ_API_KEY || GROQ_API_KEY.length < 20 || GROQ_API_KEY.includes("xxx")) return null;
@@ -113,7 +109,7 @@ router.post("/message", async (req, res) => {
     } catch (err) {
       console.error("[chatbot] Groq error:", err?.message);
       return res.status(502).json({
-        message: "Error al conectar con la IA. Verifica que GROQ_API_KEY sea válida en .env",
+        message: "No pude procesar tu mensaje en este momento. Intenta de nuevo en unos segundos.",
         error: err?.message
       });
     }
@@ -123,15 +119,15 @@ router.post("/message", async (req, res) => {
   const m = (message || "").toLowerCase();
   let reply;
   if (m.includes("coment") || m.includes("usuario")) {
-    reply = "En el Feed verás publicaciones con comentarios. Cada publicación muestra quién comentó. Para chatear con usuarios, ve a Mensajes en el menú. Configura GROQ_API_KEY para respuestas más detalladas.";
+    reply = "En el Feed verás publicaciones con comentarios. Cada publicación muestra quién comentó. Para chatear con usuarios, ve a Mensajes en el menú.";
   } else if (m.includes("resum") || m.includes("apunte")) {
-    reply = "Los apuntes están en Cursos > selecciona un curso. Configura GROQ_API_KEY en backend/foro-estudiantes/.env para respuestas con IA.";
+    reply = "Los apuntes están en Cursos: entra a un curso y verás los apuntes colaborativos disponibles.";
   } else if (m.includes("recomend") || m.includes("recurso")) {
-    reply = "Explora el Feed para publicaciones, Cursos para apuntes y recursos. Configura GROQ_API_KEY para recomendaciones personalizadas.";
+    reply = "Explora el Feed para ver publicaciones y Cursos para apuntes y recursos compartidos por la comunidad.";
   } else if (m.includes("lumina") || m.includes("ayuda") || m.includes("qué puedo")) {
-    reply = "En Lumina: Feed (publicaciones y comentarios), Cursos y apuntes, Mensajes (chat), Amigos, Perfil (puntos y ranking), Impacto (estadísticas). Configura GROQ_API_KEY para más ayuda.";
+    reply = "En Lumina puedes: publicar y comentar en el Feed, seguir cursos, crear apuntes, chatear por Mensajes, agregar Amigos, ver tu Perfil con puntos y ranking, y el Dashboard de Impacto.";
   } else {
-    reply = "Soy el asistente de Lumina. Para respuestas con IA sobre la plataforma, agrega GROQ_API_KEY en backend/foro-estudiantes/.env (gratis en console.groq.com/keys).";
+    reply = "Soy el asistente de Lumina. Puedo ayudarte con dudas sobre la plataforma: Feed, Cursos, Mensajes, Amigos, Perfil, etc. ¿Qué te gustaría saber?";
   }
   return res.json({ message: reply });
 });
