@@ -188,6 +188,7 @@ function CourseView() {
           <CreatePublication
             onPublicationCreated={handlePublicationCreated}
             courseId={courseId}
+            courseName={course?.nombre || course?.name}
           />
           {publications.length === 0 ? (
             <div className="empty-state">

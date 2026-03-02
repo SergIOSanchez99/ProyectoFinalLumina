@@ -59,6 +59,14 @@ app.delete("/usuarios/:id", (req, res) => {
   return res.status(204).send();
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Servicio usuarios ejecutandose en http://localhost:${PORT}`);
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`\n[usuarios] Puerto ${PORT} ya está en uso. Ejecuta: .\\scripts\\liberar-puertos.ps1\n`);
+    process.exit(1);
+  }
+  throw err;
 });

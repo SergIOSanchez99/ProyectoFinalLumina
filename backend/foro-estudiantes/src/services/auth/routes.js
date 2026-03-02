@@ -40,7 +40,17 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Email y contraseña son obligatorios" });
     }
 
-    const usuario = await getUsuarioByEmail(email);
+    let usuario = null;
+    try {
+      usuario = await getUsuarioByEmail(email);
+    } catch (dbErr) {
+      console.error("[auth] Error DB en login:", dbErr.message);
+      return res.status(503).json({ message: "Error de conexión con la base de datos. Verifica que MySQL esté corriendo y las credenciales en backend/foro-estudiantes/.env" });
+    }
+
+    if (!usuario && !db.isConfigured()) {
+      usuario = store.usuarios.find((u) => (u.email || "").toLowerCase() === email.toLowerCase());
+    }
     if (!usuario) {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
@@ -52,7 +62,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: usuario.id, email: usuario.email },
+      { id: usuario.id, email: usuario.email, name: usuario.nombre },
       JWT_SECRET,
       { expiresIn: "7d" }
     );

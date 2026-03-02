@@ -133,6 +133,12 @@
   margin-bottom: 8px;
 }
 
+.stat-card--ranking h3 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
 .stat-card p {
   color: var(--text-secondary);
   font-size: 1rem;
@@ -155,6 +161,12 @@
 
 .profile-activity h2 {
   margin-bottom: 20px;
+}
+
+.profile-publications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 @media (max-width: 768px) {

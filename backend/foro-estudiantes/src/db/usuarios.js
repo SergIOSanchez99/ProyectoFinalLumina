@@ -12,8 +12,8 @@ async function findByEmail(email) {
       [email]
     );
   } catch (err) {
-    console.warn("[db] Error findByEmail:", err.message);
-    return null;
+    console.error("[db] Error findByEmail:", err.message);
+    throw err;
   }
 }
 
@@ -99,4 +99,33 @@ function rowToProfile(row) {
   };
 }
 
-module.exports = { findByEmail, findById, create, update, rowToUsuario, rowToProfile };
+async function search(query, excludeId = null, limit = 10) {
+  if (!db.isConfigured()) return [];
+  try {
+    const q = `%${String(query).trim()}%`;
+    const exclude = excludeId ? "AND id != ?" : "";
+    const params = excludeId ? [q, q, q, Number(excludeId)] : [q, q, q];
+    const limitVal = Math.min(parseInt(limit, 10) || 10, 50);
+    const rows = await db.query(
+      `SELECT id, nombre, email, universidad, carrera, bio, avatar_url, nickname, created_at 
+       FROM usuarios 
+       WHERE (nombre LIKE ? OR email LIKE ? OR COALESCE(nickname,'') LIKE ?) ${exclude}
+       ORDER BY nombre ASC
+       LIMIT ${limitVal}`,
+      params
+    );
+    return (rows || []).map((r) => ({
+      id: r.id,
+      name: r.nombre,
+      nombre: r.nombre,
+      email: r.email,
+      nickname: r.nickname,
+      avatar_url: r.avatar_url
+    }));
+  } catch (err) {
+    console.warn("[db] Error search usuarios:", err.message);
+    return [];
+  }
+}
+
+module.exports = { findByEmail, findById, create, update, search, rowToUsuario, rowToProfile };

@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { userService } from '../services/userService'
+import { contentService } from '../services/contentService'
 import { useAuth } from '../hooks/useAuth'
+import PublicationCard from '../components/PublicationCard'
 import toast from 'react-hot-toast'
 import './Profile.css'
 
@@ -10,9 +12,12 @@ function Profile() {
   const { user: currentUser, updateUser } = useAuth()
   const [profile, setProfile] = useState(null)
   const [reputation, setReputation] = useState(null)
+  const [publications, setPublications] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingPublications, setLoadingPublications] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(null)
+  const [isFollowing, setIsFollowing] = useState(false)
   const fileInputRef = useRef(null)
 
   const isOwnProfile = !userId || userId === currentUser.id
@@ -20,6 +25,18 @@ function Profile() {
   useEffect(() => {
     loadProfile()
   }, [userId])
+
+  useEffect(() => {
+    if (profile?.id) {
+      loadPublications(profile.id)
+    }
+  }, [profile?.id])
+
+  useEffect(() => {
+    if (profile && !isOwnProfile) {
+      userService.isFollowing(profile.id).then(setIsFollowing)
+    }
+  }, [profile?.id, isOwnProfile])
 
   const loadProfile = async () => {
     try {
@@ -36,6 +53,37 @@ function Profile() {
       toast.error('Error al cargar perfil')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadPublications = async (targetUserId) => {
+    try {
+      setLoadingPublications(true)
+      const data = await contentService.getPublications({ userId: targetUserId })
+      setPublications(data)
+    } catch (error) {
+      setPublications([])
+    } finally {
+      setLoadingPublications(false)
+    }
+  }
+
+  const handleReact = async (publicationId, reactionType) => {
+    try {
+      await contentService.reactToPublication(publicationId, reactionType)
+      if (profile?.id) loadPublications(profile.id)
+    } catch {
+      toast.error('Error al reaccionar')
+    }
+  }
+
+  const handleDelete = async (publicationId) => {
+    try {
+      await contentService.deletePublication(publicationId)
+      setPublications(prev => prev.filter(p => p.id !== publicationId))
+      toast.success('Publicación eliminada')
+    } catch {
+      toast.error('Error al eliminar publicación')
     }
   }
 
@@ -59,6 +107,29 @@ function Profile() {
       setAvatarPreview(reader.result)
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleFollow = async () => {
+    try {
+      await userService.follow(profile.id)
+      setIsFollowing(true)
+      toast.success('Ahora sigues a este usuario')
+    } catch (error) {
+      if (error.response?.status === 409) {
+        setIsFollowing(true)
+      }
+      toast.error(error.response?.data?.error || 'Error al seguir')
+    }
+  }
+
+  const handleUnfollow = async () => {
+    try {
+      await userService.unfollow(profile.id)
+      setIsFollowing(false)
+      toast.success('Dejaste de seguir')
+    } catch {
+      toast.error('Error al dejar de seguir')
+    }
   }
 
   const handleSaveProfile = async (e) => {
@@ -109,7 +180,7 @@ function Profile() {
           <p className="profile-university">{profile?.university}</p>
           <p className="profile-career">{profile?.career}</p>
         </div>
-        {isOwnProfile && (
+        {isOwnProfile ? (
           <button 
             className="btn btn-outline"
             onClick={() => {
@@ -118,6 +189,13 @@ function Profile() {
             }}
           >
             {isEditing ? 'Cancelar' : 'Editar Perfil'}
+          </button>
+        ) : (
+          <button
+            className={`btn ${isFollowing ? 'btn-outline' : 'btn-primary'}`}
+            onClick={isFollowing ? handleUnfollow : handleFollow}
+          >
+            {isFollowing ? 'Siguiendo' : 'Agregar amigo'}
           </button>
         )}
       </div>
@@ -131,7 +209,7 @@ function Profile() {
           <h3>{reputation?.level || 1}</h3>
           <p>Nivel</p>
         </div>
-        <div className="stat-card">
+        <div className="stat-card stat-card--ranking">
           <h3>{reputation?.rank || 'N/A'}</h3>
           <p>Ranking</p>
         </div>
@@ -246,9 +324,25 @@ function Profile() {
 
       <div className="profile-activity">
         <h2>Actividad Reciente</h2>
-        <div className="empty-state">
-          <p>No hay actividad reciente</p>
-        </div>
+        {loadingPublications ? (
+          <div className="loading-spinner">Cargando publicaciones...</div>
+        ) : publications.length === 0 ? (
+          <div className="empty-state">
+            <p>No hay publicaciones aún</p>
+          </div>
+        ) : (
+          <div className="profile-publications-list">
+            {publications.map((pub) => (
+              <PublicationCard
+                key={pub.id}
+                publication={pub}
+                onReact={handleReact}
+                onDelete={isOwnProfile ? handleDelete : null}
+                currentUserId={currentUser?.id}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

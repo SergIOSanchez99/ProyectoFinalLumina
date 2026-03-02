@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { Sun } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import UserSearch from './UserSearch'
+import MessagesPreview from './MessagesPreview'
 import './Navbar.css'
 
 function Navbar() {
@@ -16,7 +18,10 @@ function Navbar() {
           <span>Lumina</span>
         </Link>
 
+        <UserSearch />
+
         <div className="navbar-menu">
+          <MessagesPreview />
           <div className="navbar-user">
             <Link to="/profile" className="user-profile" title="Mi perfil">
               <div className="user-avatar">

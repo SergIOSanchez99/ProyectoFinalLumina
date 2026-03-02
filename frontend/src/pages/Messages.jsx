@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { MessageCircle, Send, Search, UserPlus } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { MessageCircle, SendHorizontal, Search, UserPlus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { messagingService } from '../services/messagingService'
 import toast from 'react-hot-toast'
@@ -10,6 +10,7 @@ import './Messages.css'
 
 function Messages() {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [messages, setMessages] = useState([])
@@ -21,10 +22,23 @@ function Messages() {
   const [searchResults, setSearchResults] = useState([])
   const [searching, setSearching] = useState(false)
   const messagesEndRef = useRef(null)
+  const searchDebounceRef = useRef(null)
 
   useEffect(() => {
     loadConversations()
   }, [])
+
+  const convIdFromUrl = searchParams.get('conversation')
+  useEffect(() => {
+    if (convIdFromUrl && conversations.length > 0) {
+      const id = Number(convIdFromUrl)
+      const conv = conversations.find(c => c.id === id)
+      if (conv) {
+        setSelectedConversation(conv)
+        setSearchParams({}, { replace: true })
+      }
+    }
+  }, [convIdFromUrl, conversations])
 
   useEffect(() => {
     if (selectedConversation) {
@@ -83,8 +97,8 @@ function Messages() {
     }
   }
 
-  const handleSearchUsers = async () => {
-    if (searchQuery.length < 2) {
+  const handleSearchUsers = useCallback(async () => {
+    if (searchQuery.length < 3) {
       setSearchResults([])
       return
     }
@@ -97,7 +111,19 @@ function Messages() {
     } finally {
       setSearching(false)
     }
-  }
+  }, [searchQuery])
+
+  useEffect(() => {
+    if (searchQuery.length < 3) {
+      setSearchResults([])
+      return
+    }
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    searchDebounceRef.current = setTimeout(() => handleSearchUsers(), 300)
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    }
+  }, [searchQuery, handleSearchUsers])
 
   const handleStartConversation = async (otherUser) => {
     try {
@@ -143,17 +169,14 @@ function Messages() {
 
           {showNewChat && (
             <div className="new-chat-panel">
+              <p className="new-chat-hint">Busca usuarios registrados para iniciar una conversación</p>
               <div className="search-box">
                 <Search size={18} />
                 <input
                   type="text"
-                  placeholder="Buscar por nombre o nickname..."
+                  placeholder="Buscar por nombre, email o nickname (mín. 3 caracteres)..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    if (e.target.value.length >= 2) handleSearchUsers()
-                  }}
-                  onKeyUp={() => searchQuery.length >= 2 && handleSearchUsers()}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <div className="search-results">
@@ -161,7 +184,7 @@ function Messages() {
                   <p className="muted">Buscando...</p>
                 ) : searchResults.length === 0 ? (
                   <p className="muted">
-                    {searchQuery.length < 2 ? 'Escribe al menos 2 caracteres' : 'No se encontraron usuarios'}
+                    {searchQuery.length < 3 ? 'Escribe al menos 3 caracteres para buscar usuarios' : 'No se encontraron usuarios'}
                   </p>
                 ) : (
                   searchResults.map(u => (
@@ -289,7 +312,7 @@ function Messages() {
                   disabled={sending}
                 />
                 <button type="submit" className="btn-send" disabled={!newMessage.trim() || sending}>
-                  <Send size={20} />
+                  <SendHorizontal size={24} />
                 </button>
               </form>
             </>

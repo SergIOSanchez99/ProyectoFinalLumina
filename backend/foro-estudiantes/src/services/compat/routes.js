@@ -79,8 +79,9 @@ router.use(authMiddleware);
 
 router.get("/publications", async (req, res) => {
   let temas = await getTemas();
-  const { courseId } = req.query;
+  const { courseId, userId } = req.query;
   if (courseId) temas = temas.filter((t) => t.cursoId === Number(courseId));
+  if (userId) temas = temas.filter((t) => t.usuarioId === Number(userId));
   const mapped = await Promise.all(temas.map((t) => mapTemaToPublication(t, req.userId)));
   return res.json(mapped);
 });

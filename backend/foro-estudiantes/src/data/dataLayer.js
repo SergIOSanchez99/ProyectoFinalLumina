@@ -9,6 +9,7 @@ const db = require("../db/connection");
 const dbUsuarios = require("../db/usuarios");
 const dbComentarios = require("../db/comentarios");
 const dbPublicaciones = require("../db/publicaciones");
+const dbCursos = require("../db/cursos");
 
 const temaTagsOverlay = {};
 
@@ -51,6 +52,10 @@ async function getCursos() {
     const ms = await microservicios.cursos.getAll();
     if (Array.isArray(ms) && ms.length > 0) return ms;
   }
+  if (db.isConfigured()) {
+    const rows = await dbCursos.getAll();
+    if (Array.isArray(rows) && rows.length > 0) return rows;
+  }
   return store.cursos;
 }
 
@@ -61,6 +66,13 @@ async function ensureCursoGeneral() {
     const creado = await microservicios.cursos.create("General", "GEN001");
     if (creado) return creado;
   }
+  if (db.isConfigured()) {
+    const creado = await dbCursos.create("General", "GEN001", "Curso general para publicaciones", null, null);
+    if (creado) {
+      store.cursos.push(creado);
+      return creado;
+    }
+  }
   ensureDefaultCourse();
   return store.cursos[0];
 }
@@ -69,6 +81,10 @@ async function getTemas() {
   if (microservicios.isEnabled()) {
     const ms = await microservicios.temas.getAll();
     if (Array.isArray(ms)) return ms;
+  }
+  if (db.isConfigured()) {
+    const rows = await dbPublicaciones.getAll();
+    if (Array.isArray(rows) && rows.length > 0) return rows;
   }
   return store.temas;
 }
@@ -79,7 +95,11 @@ async function getTemaById(id) {
     const ms = await microservicios.temas.getById(numId);
     if (ms) return ms;
   }
-  return store.temas.find((t) => t.id === numId);
+  if (db.isConfigured()) {
+    const row = await dbPublicaciones.getById(numId);
+    if (row) return row;
+  }
+  return store.temas.find((t) => t.id === numId) || null;
 }
 
 async function createTema(titulo, contenido, cursoId, usuarioId) {
@@ -99,6 +119,10 @@ async function createTema(titulo, contenido, cursoId, usuarioId) {
     createdAt: new Date().toISOString()
   };
   if (db.isConfigured()) {
+    const curso = (await getCursos()).find((c) => c.id === cursoId) || store.cursos.find((c) => c.id === cursoId);
+    if (curso) {
+      await dbCursos.ensureExists(cursoId, curso.nombre, curso.codigo, curso.descripcion, curso.docente);
+    }
     await dbPublicaciones.ensureExists(nuevo.id, usuarioId, cursoId, titulo, contenido);
   }
   store.temas.push(nuevo);
@@ -132,6 +156,9 @@ async function deleteTema(id) {
   if (microservicios.isEnabled()) {
     await microservicios.temas.delete(numId);
   }
+  if (db.isConfigured()) {
+    await dbPublicaciones.deleteById(numId);
+  }
   const idx = store.temas.findIndex((t) => t.id === numId);
   if (idx >= 0) store.temas.splice(idx, 1);
 }
@@ -157,6 +184,10 @@ async function createComentario(contenido, temaId, usuarioId, parentId = null) {
   if (db.isConfigured()) {
     const tema = await getTemaById(temaId);
     if (tema) {
+      const curso = (await getCursos()).find((c) => c.id === tema.cursoId) || store.cursos.find((c) => c.id === tema.cursoId);
+      if (curso) {
+        await dbCursos.ensureExists(tema.cursoId, curso.nombre, curso.codigo, curso.descripcion, curso.docente);
+      }
       await dbPublicaciones.ensureExists(temaId, tema.usuarioId, tema.cursoId, tema.titulo, tema.contenido);
     }
     const creado = await dbComentarios.create(usuarioId, temaId, contenido, parentId);

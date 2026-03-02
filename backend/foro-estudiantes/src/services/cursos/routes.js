@@ -1,13 +1,25 @@
 const express = require("express");
 const { store, nextId } = require("../../data/store");
+const db = require("../../db/connection");
+const dbCursos = require("../../db/cursos");
 
 const router = express.Router();
 
-router.get("/", (req, res) => res.json(store.cursos));
+router.get("/", async (req, res) => {
+  if (db.isConfigured()) {
+    const rows = await dbCursos.getAll();
+    if (Array.isArray(rows) && rows.length > 0) return res.json(rows);
+  }
+  return res.json(store.cursos);
+});
 
-router.get("/:id", (req, res) => {
+router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const curso = store.cursos.find((c) => c.id === id);
+  let curso = null;
+  if (db.isConfigured()) {
+    curso = await dbCursos.getById(id);
+  }
+  if (!curso) curso = store.cursos.find((c) => c.id === id);
   if (!curso) return res.status(404).json({ error: "Curso no encontrado" });
 
   const inscritos = store.inscripciones.filter((i) => i.cursoId === id).length;
@@ -16,14 +28,23 @@ router.get("/:id", (req, res) => {
   return res.json({ ...curso, stats: { inscritos, temas } });
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { nombre, codigo, descripcion, docente } = req.body;
   if (!nombre || !codigo) {
     return res.status(400).json({ error: "nombre y codigo son obligatorios" });
   }
 
-  const duplicado = store.cursos.some((c) => c.codigo === codigo);
+  const duplicado = store.cursos.some((c) => c.codigo === codigo) ||
+    (db.isConfigured() && !!(await dbCursos.getByCodigo(codigo)));
   if (duplicado) return res.status(409).json({ error: "codigo ya existe" });
+
+  if (db.isConfigured()) {
+    const creado = await dbCursos.create(nombre, codigo, descripcion || null, docente || null);
+    if (creado) {
+      store.cursos.push(creado);
+      return res.status(201).json(creado);
+    }
+  }
 
   const nuevo = {
     id: nextId("cursos"),
@@ -33,21 +54,28 @@ router.post("/", (req, res) => {
     docente: docente || null,
     createdAt: new Date().toISOString()
   };
-
   store.cursos.push(nuevo);
   return res.status(201).json(nuevo);
 });
 
-router.put("/:id", (req, res) => {
+router.put("/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const idx = store.cursos.findIndex((c) => c.id === id);
-  if (idx < 0) return res.status(404).json({ error: "Curso no encontrado" });
-
   const { nombre, codigo, descripcion, docente } = req.body;
   if (!nombre || !codigo) {
     return res.status(400).json({ error: "nombre y codigo son obligatorios" });
   }
 
+  if (db.isConfigured()) {
+    const actualizado = await dbCursos.update(id, { nombre, codigo, descripcion, docente });
+    if (actualizado) {
+      const idx = store.cursos.findIndex((c) => c.id === id);
+      if (idx >= 0) store.cursos[idx] = actualizado;
+      return res.json(actualizado);
+    }
+  }
+
+  const idx = store.cursos.findIndex((c) => c.id === id);
+  if (idx < 0) return res.status(404).json({ error: "Curso no encontrado" });
   store.cursos[idx] = {
     ...store.cursos[idx],
     nombre,
@@ -55,12 +83,19 @@ router.put("/:id", (req, res) => {
     descripcion: descripcion || store.cursos[idx].descripcion,
     docente: docente || store.cursos[idx].docente
   };
-
   return res.json(store.cursos[idx]);
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", async (req, res) => {
   const id = Number(req.params.id);
+  if (db.isConfigured()) {
+    const ok = await dbCursos.remove(id);
+    if (ok) {
+      const idx = store.cursos.findIndex((c) => c.id === id);
+      if (idx >= 0) store.cursos.splice(idx, 1);
+      return res.status(204).send();
+    }
+  }
   const idx = store.cursos.findIndex((c) => c.id === id);
   if (idx < 0) return res.status(404).json({ error: "Curso no encontrado" });
   store.cursos.splice(idx, 1);

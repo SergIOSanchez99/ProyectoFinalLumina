@@ -77,10 +77,34 @@
   line-height: 1.4;
 }
 
-.publication-content p {
+.publication-content p,
+.publication-content-rendered {
   color: var(--text-secondary);
   line-height: 1.6;
   font-size: 0.95rem;
+}
+
+.publication-content-image {
+  margin: 12px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.publication-content-image img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.publication-content-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.publication-content-link:hover {
+  text-decoration: underline;
 }
 
 .publication-tags {
@@ -396,4 +420,89 @@
 
 .cancel-reply-btn:hover {
   opacity: 0.8;
+}
+
+/* Modal de confirmación para eliminar */
+.delete-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: deleteOverlayIn 0.2s ease;
+}
+
+@keyframes deleteOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.delete-confirm-modal {
+  background: var(--bg-primary);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+  animation: deleteModalIn 0.25s ease;
+}
+
+@keyframes deleteModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.delete-confirm-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.delete-confirm-modal h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.delete-confirm-modal p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.delete-confirm-actions .btn-outline {
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+.delete-confirm-actions .btn-danger {
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: var(--danger-color);
+  color: white;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-confirm-actions .btn-danger:hover {
+  background: #B91C1C;
+  opacity: 0.95;
 }

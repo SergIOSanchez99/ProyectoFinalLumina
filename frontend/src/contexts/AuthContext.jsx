@@ -16,13 +16,24 @@ export const AuthProvider = ({ children }) => {
         try {
           const decoded = jwtDecode(token)
           if (decoded.exp * 1000 > Date.now()) {
-            setUser(decoded)
-            // Cargar perfil completo para avatar y nickname
+            // Usar datos del token como base (incluye name desde login/register)
+            setUser({
+              id: decoded.id,
+              email: decoded.email,
+              name: decoded.name || decoded.nombre
+            })
+            // Cargar perfil completo para avatar, nickname, etc.
             try {
               const profile = await userService.getProfile(decoded.id)
               setUser(prev => ({ ...prev, ...profile }))
             } catch (_) {
-              // Si falla, mantener datos del token
+              // Si getProfile falla, intentar verify como respaldo
+              try {
+                const verified = await authService.verifyToken()
+                setUser(prev => ({ ...prev, ...verified }))
+              } catch (_) {
+                // Mantener datos del token (ya tienen id, email, name)
+              }
             }
           } else {
             localStorage.removeItem('token')

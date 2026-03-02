@@ -22,16 +22,19 @@ function Chatbot() {
     scrollToBottom()
   }, [messages])
 
+  const WELCOME_MESSAGE = {
+    role: 'assistant',
+    content: '¡Hola! Soy el asistente de Lumina. Respondo dudas sobre la plataforma: cómo usar el foro, mensajes, cursos, perfil, reputación, amigos, etc. ¿Qué te gustaría saber?'
+  }
+
   const initConversation = async () => {
+    setMessages([WELCOME_MESSAGE])
     try {
       const conv = await chatbotService.createConversation()
-      setConversationId(conv.id)
-      setMessages([{
-        role: 'assistant',
-        content: '¡Hola! Soy tu asistente académico. Puedo ayudarte a resumir apuntes, responder preguntas sobre tus cursos y recomendarte recursos. ¿En qué puedo ayudarte?'
-      }])
+      setConversationId(conv?.id ?? conv?.conversationId ?? null)
     } catch (error) {
-      console.error('Error al iniciar conversación:', error)
+      console.warn('Chatbot: conversación en modo local', error?.message)
+      // El usuario puede seguir chateando sin conversationId
     }
   }
 
@@ -56,23 +59,27 @@ function Chatbot() {
       const response = await chatbotService.sendMessage(userMessage, {
         conversationId
       })
-
+      const reply = response?.message ?? response?.reply ?? 'No pude procesar tu mensaje. Intenta de nuevo.'
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: response.message
+        content: reply
       }])
     } catch (error) {
-      toast.error('Error al enviar mensaje')
+      const errMsg = error?.response?.data?.details || error?.response?.data?.error || error?.message
+      const isConfig = /api key|GROQ|credencial|configura/i.test(String(errMsg))
+      toast.error(isConfig ? 'Configura la API key del chatbot' : 'Error al enviar mensaje')
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Lo siento, ocurrió un error. Por favor, intenta de nuevo.'
+        content: isConfig
+          ? 'Para usar IA real, configura GROQ_API_KEY en backend/microservicios-basico/.env. Obtén una clave gratis en console.groq.com/keys. Ejecuta: .\\scripts\\configurar-chatbot.ps1'
+          : `Lo siento, ocurrió un error: ${errMsg || 'Intenta de nuevo.'}`
       }])
     } finally {
       setLoading(false)
     }
   }
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -126,8 +133,8 @@ function Chatbot() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Escribe tu pregunta..."
+              onKeyDown={handleKeyDown}
+              placeholder="Pregunta sobre Lumina..."
               rows={1}
               disabled={loading}
             />
@@ -144,15 +151,27 @@ function Chatbot() {
           <div className="chatbot-suggestions">
             <button 
               className="suggestion-btn"
-              onClick={() => setInput('Resume mis últimos apuntes')}
+              onClick={() => setInput('¿Qué puedo hacer en Lumina?')}
             >
-              📝 Resumir apuntes
+              💡 ¿Qué puedo hacer?
             </button>
             <button 
               className="suggestion-btn"
-              onClick={() => setInput('Recomiéndame recursos de estudio')}
+              onClick={() => setInput('¿Cómo envío mensajes a otros usuarios?')}
             >
-              📚 Recomendar recursos
+              💬 Mensajes
+            </button>
+            <button 
+              className="suggestion-btn"
+              onClick={() => setInput('¿Cómo funciona el sistema de reputación y puntos?')}
+            >
+              ⭐ Reputación
+            </button>
+            <button 
+              className="suggestion-btn"
+              onClick={() => setInput('¿Dónde veo los cursos y apuntes?')}
+            >
+              📚 Cursos
             </button>
           </div>
         </div>

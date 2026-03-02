@@ -3,6 +3,7 @@ import { ThumbsUp, Heart, Lightbulb, Users, HelpCircle, MessageSquare, Trash2 } 
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { contentService } from '../services/contentService'
+import PublicationContent from './PublicationContent'
 import toast from 'react-hot-toast'
 import './PublicationCard.css'
 
@@ -21,9 +22,17 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
   const [commentInput, setCommentInput] = useState('')
   const [loadingComments, setLoadingComments] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const reactionPickerRef = useRef(null)
 
   const [replyingTo, setReplyingTo] = useState(null)
+
+  const handleDeleteClick = () => setShowDeleteConfirm(true)
+  const handleDeleteConfirm = () => {
+    onDelete(publication.id)
+    setShowDeleteConfirm(false)
+  }
+  const handleDeleteCancel = () => setShowDeleteConfirm(false)
 
   const buildCommentTree = (commentsList) => {
     const commentMap = {}
@@ -159,6 +168,7 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
   )
 
   return (
+    <>
     <div className="publication-card card">
       <div className="publication-header">
         <div className="author-info">
@@ -175,10 +185,10 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
             </span>
           </div>
         </div>
-        {isOwner && (
+        {isOwner && onDelete && (
           <button
             className="btn-delete"
-            onClick={() => onDelete(publication.id)}
+            onClick={handleDeleteClick}
             title="Eliminar publicación"
           >
             <Trash2 size={18} />
@@ -188,7 +198,7 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
 
       <div className="publication-content">
         <h3>{publication.title}</h3>
-        <p>{publication.content}</p>
+        <PublicationContent content={publication.content} />
         {publication.tags && (() => {
           const tags = Array.isArray(publication.tags)
             ? publication.tags
@@ -316,6 +326,28 @@ function PublicationCard({ publication, onReact, onDelete, currentUserId }) {
         </div>
       )}
     </div>
+
+    {showDeleteConfirm && (
+      <div
+        className="delete-confirm-overlay"
+        onClick={(e) => e.target === e.currentTarget && handleDeleteCancel()}
+      >
+        <div className="delete-confirm-modal">
+          <div className="delete-confirm-icon">⚠️</div>
+          <h3>¿Eliminar publicación?</h3>
+          <p>Esta acción no se puede deshacer. La publicación y sus comentarios se eliminarán permanentemente.</p>
+          <div className="delete-confirm-actions">
+            <button className="btn btn-outline" onClick={handleDeleteCancel}>
+              Cancelar
+            </button>
+            <button className="btn btn-danger" onClick={handleDeleteConfirm}>
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 

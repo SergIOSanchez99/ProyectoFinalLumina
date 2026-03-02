@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "install:all": "npm install --prefix api-gateway && npm install --prefix usuarios && npm install --prefix cursos && npm install --prefix temas && npm install --prefix comentarios && npm install --prefix chatbot",
+    "predev": "node scripts/liberar-puertos.js",
     "dev": "concurrently -n gateway,usuarios,cursos,temas,comentarios,chatbot -c cyan,green,yellow,magenta,blue,white \"npm run dev --prefix api-gateway\" \"npm run dev --prefix usuarios\" \"npm run dev --prefix cursos\" \"npm run dev --prefix temas\" \"npm run dev --prefix comentarios\" \"npm run dev --prefix chatbot\""
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "kill-port": "^2.0.1"
   }
 }

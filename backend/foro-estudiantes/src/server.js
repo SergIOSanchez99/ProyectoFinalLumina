@@ -59,4 +59,8 @@ app.listen(PORT, () => {
   if (microservicios.isEnabled()) {
     console.log("  -> Conectado a microservicios (MICROSERVICIOS_URL)");
   }
+  const groqKey = (process.env.GROQ_API_KEY || "").trim();
+  if (groqKey && groqKey.length > 20 && !groqKey.includes("xxx")) {
+    console.log("  -> Chatbot con IA (Groq)");
+  }
 });

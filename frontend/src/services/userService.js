@@ -33,5 +33,26 @@ export const userService = {
   getActivityFeed: async (userId) => {
     const response = await api.get(`/api/users/${userId}/activity`)
     return response.data
+  },
+
+  getFriends: async (userId) => {
+    const id = userId === 'me' ? 'me' : userId
+    const response = await api.get(`/api/users/${id}/friends`)
+    return response.data
+  },
+
+  follow: async (targetId) => {
+    const response = await api.post(`/api/users/${targetId}/follow`)
+    return response.data
+  },
+
+  unfollow: async (targetId) => {
+    const response = await api.delete(`/api/users/${targetId}/follow`)
+    return response.data
+  },
+
+  isFollowing: async (targetId) => {
+    const response = await api.get(`/api/users/${targetId}/following`)
+    return response.data.following
   }
 }
