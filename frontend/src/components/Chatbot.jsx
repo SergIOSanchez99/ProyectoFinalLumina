@@ -65,14 +65,10 @@ function Chatbot() {
         content: reply
       }])
     } catch (error) {
-      const errMsg = error?.response?.data?.details || error?.response?.data?.error || error?.message
-      const isConfig = /api key|GROQ|credencial|configura/i.test(String(errMsg))
-      toast.error(isConfig ? 'Configura la API key del chatbot' : 'Error al enviar mensaje')
+      toast.error('Error al enviar mensaje')
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: isConfig
-          ? 'Para usar IA real, configura GROQ_API_KEY en backend/microservicios-basico/.env. Obtén una clave gratis en console.groq.com/keys. Ejecuta: .\\scripts\\configurar-chatbot.ps1'
-          : `Lo siento, ocurrió un error: ${errMsg || 'Intenta de nuevo.'}`
+        content: 'No pude procesar tu mensaje en este momento. Por favor, intenta de nuevo.'
       }])
     } finally {
       setLoading(false)

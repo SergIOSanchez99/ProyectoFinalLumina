@@ -25,18 +25,18 @@ const GEMINI_API_KEY = isPlaceholder(raw(process.env.GEMINI_API_KEY)) ? "" : raw
 const OPENAI_API_KEY = isPlaceholder(raw(process.env.OPENAI_API_KEY)) ? "" : raw(process.env.OPENAI_API_KEY);
 const GROQ_MODEL = process.env.GROQ_MODEL || process.env.AI_MODEL || "llama-3.3-70b-versatile";
 
-const LUMINA_SYSTEM_PROMPT = `Eres el asistente virtual de Lumina, una plataforma educativa de aprendizaje colaborativo. Tu ÚNICA función es responder dudas sobre el sistema Lumina. Responde de forma clara, breve y amigable.
+const LUMINA_SYSTEM_PROMPT = `Eres el asistente virtual de Lumina, una plataforma educativa donde estudiantes comparten conocimiento y aprenden en comunidad. Ayudas a los usuarios a usar Lumina. Responde de forma clara, breve y amigable.
 
-INFORMACIÓN SOBRE LUMINA:
-- **Feed/Foro**: Publicaciones con reacciones (like, love, apoyo, genial, interesante). Comentarios y debates.
-- **Cursos**: Cursos académicos con apuntes colaborativos. Ruta: /courses/:courseId
-- **Apuntes**: Editor compartido. Ruta: /editor/:noteId
-- **Mensajes**: Chat privado entre usuarios. Ruta: /messages
-- **Amigos**: Seguir usuarios. Ruta: /friends
-- **Perfil**: Avatar, nickname, puntos, nivel, ranking. Ruta: /profile
-- **Impacto**: Estadísticas de reputación. Ruta: /impact
+SOBRE LUMINA (plataforma para estudiantes):
+- **Feed**: Publica temas, comenta y reacciona (like, love, apoyo, genial, interesante).
+- **Cursos**: Inscríbete, accede a apuntes colaborativos y recursos.
+- **Apuntes**: Crea y edita apuntes junto con otros.
+- **Mensajes**: Chatea en privado. Busca "Mensajes" en el menú.
+- **Amigos**: Sigue usuarios y ve tu lista en "Amigos".
+- **Perfil**: Tu foto, nickname, puntos, nivel, ranking, contribuciones.
+- **Impacto**: Dashboard con estadísticas y actividad.
 
-**Reglas:** SOLO responde dudas sobre Lumina. Si preguntan temas académicos generales, indica que solo ayudas con la plataforma.`;
+**Reglas:** SOLO habla de Lumina como plataforma. NO hables de código ni configuración técnica. Si preguntan temas de estudio, indica que solo ayudas con el uso de Lumina.`;
 
 app.get("/health", (req, res) => {
   const provider = GROQ_API_KEY ? "groq" : GEMINI_API_KEY ? "gemini" : OPENAI_API_KEY ? "openai" : "demo";
@@ -124,7 +124,7 @@ app.post("/chatbot/message", async (req, res) => {
       reply = await callOpenAI(message, curso, tema);
       source = "openai";
     } else {
-      reply = `Soy el asistente de Lumina. Para respuestas con IA sobre la plataforma, configura GROQ_API_KEY en .env (gratis en console.groq.com). Mientras tanto: explora el Feed para publicaciones, /messages para chatear, /profile para tu perfil y /friends para agregar amigos.`;
+      reply = `Soy el asistente de Lumina. Explora el Feed para publicaciones, Mensajes para chatear, tu Perfil para ver puntos y ranking, y Amigos para conectar con otros usuarios. ¿En qué puedo ayudarte?`;
     }
 
     return res.json({ source, reply });
@@ -133,8 +133,8 @@ app.post("/chatbot/message", async (req, res) => {
     const isAuth = /401|unauthorized|invalid.*key|api.*key/i.test(msg);
     console.error("[chatbot]", msg);
     return res.status(502).json({
-      error: isAuth ? "API key inválida o expirada. Verifica GROQ_API_KEY en .env" : "No se pudo consultar el proveedor de IA",
-      details: isAuth ? "Obtén una clave gratis en https://console.groq.com/keys" : msg
+      error: "No pude procesar tu mensaje. Intenta de nuevo en unos segundos.",
+      details: msg
     });
   }
 });

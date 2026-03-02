@@ -21,6 +21,11 @@ export const messagingService = {
     return response.data
   },
 
+  markAsRead: async (conversationId, messageIds = null) => {
+    const response = await api.put(`/api/messaging/conversations/${conversationId}/read`, { messageIds })
+    return response.data
+  },
+
   searchUsers: async (query) => {
     const response = await api.get('/api/messaging/users/search', { params: { q: query } })
     return response.data

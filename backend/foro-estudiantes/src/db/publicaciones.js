@@ -50,6 +50,48 @@ async function getById(id) {
   }
 }
 
+async function create(usuarioId, cursoId, titulo, contenido) {
+  if (!db.isConfigured()) return null;
+  try {
+    const pool = await db.getPool();
+    const [result] = await pool.execute(
+      "INSERT INTO publicaciones (usuario_id, curso_id, titulo, contenido, estado, vistas) VALUES (?, ?, ?, ?, 'abierto', 0)",
+      [Number(usuarioId), Number(cursoId), titulo, contenido]
+    );
+    const id = result?.insertId;
+    return id ? getById(id) : null;
+  } catch (err) {
+    console.warn("[db] Error create publicacion:", err.message);
+    return null;
+  }
+}
+
+async function update(id, data) {
+  if (!db.isConfigured()) return null;
+  try {
+    const updates = [];
+    const params = [];
+    if (data.titulo !== undefined) {
+      updates.push("titulo = ?");
+      params.push(data.titulo);
+    }
+    if (data.contenido !== undefined) {
+      updates.push("contenido = ?");
+      params.push(data.contenido);
+    }
+    if (updates.length === 0) return getById(Number(id));
+    params.push(Number(id));
+    await db.query(
+      `UPDATE publicaciones SET ${updates.join(", ")} WHERE id = ?`,
+      params
+    );
+    return getById(Number(id));
+  } catch (err) {
+    console.warn("[db] Error update publicacion:", err.message);
+    return null;
+  }
+}
+
 async function ensureExists(id, usuarioId, cursoId, titulo, contenido) {
   if (!db.isConfigured()) return false;
   try {
@@ -77,4 +119,4 @@ async function deleteById(id) {
   }
 }
 
-module.exports = { getAll, getById, ensureExists, deleteById };
+module.exports = { getAll, getById, create, update, ensureExists, deleteById };

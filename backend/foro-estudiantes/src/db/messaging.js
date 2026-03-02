@@ -101,7 +101,7 @@ async function getMessages(conversationId, userId) {
   if (!ok) return [];
   try {
     const rows = await db.query(
-      "SELECT id, conversacion_id, remitente_id, contenido, created_at FROM dm_mensajes WHERE conversacion_id = ? ORDER BY created_at ASC",
+      "SELECT id, conversacion_id, remitente_id, contenido, created_at, leido, leido_at FROM dm_mensajes WHERE conversacion_id = ? ORDER BY created_at ASC",
       [Number(conversationId)]
     );
     const result = [];
@@ -113,7 +113,9 @@ async function getMessages(conversationId, userId) {
         senderId: r.remitente_id,
         createdAt: r.created_at,
         senderName: sender?.nombre,
-        senderAvatar: sender?.avatar_url
+        senderAvatar: sender?.avatar_url,
+        seen: !!r.leido,
+        seenAt: r.leido_at || null
       });
     }
     return result;
@@ -146,11 +148,59 @@ async function createMessage(conversationId, senderId, content) {
       senderId: row.remitente_id,
       createdAt: row.created_at,
       senderName: sender?.nombre,
-      senderAvatar: sender?.avatar_url
+      senderAvatar: sender?.avatar_url,
+      seen: false,
+      seenAt: null
     } : null;
   } catch (err) {
     console.warn("[db] Error createMessage:", err.message);
     return null;
+  }
+}
+
+async function getOtherParticipant(conversationId, userId) {
+  if (!db.isConfigured()) return null;
+  try {
+    const row = await db.queryOne(
+      "SELECT usuario1_id, usuario2_id FROM dm_conversaciones WHERE id = ?",
+      [Number(conversationId)]
+    );
+    if (!row) return null;
+    const other = row.usuario1_id === Number(userId) ? row.usuario2_id : row.usuario1_id;
+    return other;
+  } catch (err) {
+    console.warn("[db] Error getOtherParticipant:", err.message);
+    return null;
+  }
+}
+
+async function markMessagesAsRead(conversationId, userId, messageIds = null) {
+  if (!db.isConfigured()) return { markedIds: [], messages: [] };
+  const ok = await isParticipant(conversationId, userId);
+  if (!ok) return { markedIds: [], messages: [] };
+  try {
+    let idsToMark = messageIds;
+    if (!idsToMark || idsToMark.length === 0) {
+      const rows = await db.query(
+        "SELECT id FROM dm_mensajes WHERE conversacion_id = ? AND remitente_id != ? AND (leido IS NULL OR leido = 0)",
+        [Number(conversationId), Number(userId)]
+      );
+      idsToMark = (rows || []).map((r) => r.id);
+    }
+    if (idsToMark.length === 0) {
+      const messages = await getMessages(conversationId, userId);
+      return { markedIds: [], messages };
+    }
+    const placeholders = idsToMark.map(() => "?").join(",");
+    await db.query(
+      `UPDATE dm_mensajes SET leido = 1, leido_at = NOW() WHERE id IN (${placeholders})`,
+      idsToMark.map(Number)
+    );
+    const messages = await getMessages(conversationId, userId);
+    return { markedIds: idsToMark, messages };
+  } catch (err) {
+    console.warn("[db] Error markMessagesAsRead:", err.message);
+    return { markedIds: [], messages: [] };
   }
 }
 
@@ -159,5 +209,7 @@ module.exports = {
   getConversations,
   getMessages,
   createMessage,
-  isParticipant
+  isParticipant,
+  getOtherParticipant,
+  markMessagesAsRead
 };
