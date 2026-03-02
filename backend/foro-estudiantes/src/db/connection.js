@@ -5,8 +5,18 @@
 
 const mysql = require("mysql2/promise");
 
+function isTrue(value) {
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+}
+
+const host = process.env.DB_HOST || "localhost";
+const useSsl = isTrue(process.env.DB_SSL) || host.includes(".mysql.database.azure.com");
+const rejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED === undefined
+  ? true
+  : isTrue(process.env.DB_SSL_REJECT_UNAUTHORIZED);
+
 const config = {
-  host: process.env.DB_HOST || "localhost",
+  host,
   port: parseInt(process.env.DB_PORT, 10) || 3306,
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
@@ -16,6 +26,10 @@ const config = {
   queueLimit: 0,
   charset: "utf8mb4"
 };
+
+if (useSsl) {
+  config.ssl = { rejectUnauthorized };
+}
 
 let pool = null;
 
